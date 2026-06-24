@@ -1,0 +1,27 @@
+# build artifacts
+build/
+*.3dsx
+*.elf
+*.smdh
+*.cia
+
+# object/dep
+*.o
+*.d
+*.map
+
+# editor backups
+*.bak
+*~
+.DS_Store
+Thumbs.db
+
+# test samples / dumps (large + private)
+samples/
+
+# runtime data blobs go in the user's SD, not in the repo
+data/
+
+# generated dirs from app
+sdmc/
+backups/
