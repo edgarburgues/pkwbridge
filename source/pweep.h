@@ -34,13 +34,14 @@
 #define PWEEP_OFF_CAUGHT_POKEMON   0xCE8C   /* 0x30 B, caught during walk */
 #define PWEEP_CAUGHT_POKEMON_SIZE  0x0030
 /* Dowsing find buffer: 0xCEBC = 0xCE8C + 0x30, immediately after the
- * caught Pokemon block.  3 entries of 4 bytes each:
+ * caught Pokemon block.  13 entries of 4 bytes each (0x34 B total, ending
+ * right before the daily step history at 0xCEF0):
  *   { u16 item_id LE, u16 _padding (always 0) }
  * Populated when the player accepts a dowsing item-find pop-up. The slot
  * allocator picks the first slot whose first u16 is 0, so 0 = empty. */
 #define PWEEP_OFF_DOWSING_ITEMS    0xCEBC
-#define PWEEP_DOWSING_ITEMS_SIZE   0x000C   /* 12 B total */
-#define PWEEP_DOWSING_SLOT_COUNT   3
+#define PWEEP_DOWSING_ITEMS_SIZE   0x0034   /* 52 B total (13 x 4) */
+#define PWEEP_DOWSING_SLOT_COUNT   13
 #define PWEEP_DOWSING_SLOT_STRIDE  4
 #define PWEEP_OFF_DAILY_STEPS      0xCEF0   /* 7 x u32 BE daily step counts,
                                              * rotated at midnight by the
@@ -322,9 +323,9 @@ int  pweep_caught_count(const pweep_t *p);
 void pweep_caught_clear_all(pweep_t *p);
 
 /* =====================================================================
- * Dowsing finds buffer at 0xCEBC (12 B, 3 entries x 4 bytes).
+ * Dowsing finds buffer at 0xCEBC (0x34 B, 13 entries x 4 bytes).
  *
- * The walker stores up to 3 item-find events here between IR syncs.
+ * The walker stores up to 13 item-find events here between IR syncs.
  * Each entry is a u16 item_id (gen-4 IDs, LE) + u16 padding (=0).
  * `pweep_dowsing_get_at` returns item_id or 0 for empty/oor slots.
  * `pweep_dowsing_count` counts non-zero slots.

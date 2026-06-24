@@ -58,6 +58,15 @@ static uint32_t xs32_next(uint32_t *s) {
  *  - has the requested nature (PID % 25 == nature)
  *  - is NOT shiny (since HGSS forces shiny=0 on walker claim)
  * Re-rolls until conditions met. */
+/* Pack six random IVs (0..31 each) into bits 0..29; bits 30/31 (isEgg,
+ * isNicknamed) stay 0 — the IV layout of a legal gen-4 Pokemon. */
+static uint32_t make_iv_word(uint32_t *rng) {
+    uint32_t w = 0;
+    for (int i = 0; i < 6; i++)
+        w |= (uint32_t)(xs32_next(rng) % 32u) << (i * 5);
+    return w;
+}
+
 static uint32_t generate_pid(uint32_t *rng, uint16_t species, uint8_t sex,
                              uint8_t nature, uint16_t tid, uint16_t sid)
 {
@@ -132,6 +141,7 @@ static void synth_pk4_encrypted(const pweep_caught_t *c,
                                  uint8_t  ot_gender,
                                  uint8_t  ot_language,
                                  uint32_t pid,
+                                 uint32_t iv_word,
                                  uint32_t exp_amount,
                                  uint8_t  ability_slot,
                                  uint8_t  pokeball,
@@ -172,12 +182,12 @@ static void synth_pk4_encrypted(const pweep_caught_t *c,
         pk[0x28 + i*2 + 1] = (uint8_t)((c->move[i] >> 8) & 0xFF);
         /* PP: leave 0 — game will fill from waza data on first load */
     }
-    /* IV bits at +0x38..+0x3B (random — for now leave zero meaning all 0 IVs;
-     * not ideal but valid). Bit 30 = isEgg, bit 31 = isNicknamed. */
-    pk[0x38] = 0;
-    pk[0x39] = 0;
-    pk[0x3A] = 0;
-    pk[0x3B] = 0;
+    /* IV bits at +0x38..+0x3B: six 5-bit IVs (HP, Atk, Def, Spe, SpA, SpD) in
+     * bits 0..29. Bit 30 = isEgg (0), bit 31 = isNicknamed (0). */
+    pk[0x38] = (uint8_t)(iv_word         & 0xFF);
+    pk[0x39] = (uint8_t)((iv_word >> 8)  & 0xFF);
+    pk[0x3A] = (uint8_t)((iv_word >> 16) & 0xFF);
+    pk[0x3B] = (uint8_t)((iv_word >> 24) & 0x3F);
     /* isNicknamed = 0 → game uses species name as nickname */
 
     /* Block C: nickname at +0x48. The nickname field bytes are what the
@@ -267,11 +277,12 @@ bool pweep_claim_into_sav(pweep_t *pweep, hgss_sav_t *sav,
 
         /* EXP for the recorded level */
         uint32_t exp_amount = species_exp_for_level(c.species, c.level);
+        uint32_t iv_word = make_iv_word(&rng);
 
         /* Synthesize encrypted PK4 */
         uint8_t pk4[136];
         synth_pk4_encrypted(&c, tid, sid, ot_name, ot_gender, ot_language,
-                            pid, exp_amount, ability_slot, DEFAULT_POKEBALL,
+                            pid, iv_word, exp_amount, ability_slot, DEFAULT_POKEBALL,
                             my, mm, md, pk4);
 
         /* Find first empty slot in HGSS storage. */
@@ -315,8 +326,8 @@ bool pweep_claim_into_sav(pweep_t *pweep, hgss_sav_t *sav,
 
     /* Dowsing item finds.
      *
-     * The walker stores up to 3 dowsing finds in the 12-byte buffer
-     * at EEP 0xCEBC (3 x {u16 item_id LE, u16 padding=0}), written when
+     * The walker stores up to 13 dowsing finds in the buffer at EEP
+     * 0xCEBC (13 x {u16 item_id LE, u16 padding=0}), written when
      * the player accepts an item-find pop-up. On a real IR sync HGSS
      * adds each item to the bag; here each entry is routed into the
      * appropriate HGSS bag (Items / Medicine / Berries / Balls / TMHM,

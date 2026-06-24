@@ -27,9 +27,9 @@
 #include "pweep.h"
 #include "hgss_sav.h"
 
-/* Dowsing-find summary for one slot of the walker's 3-entry buffer at
+/* Dowsing-find summary for one slot of the walker's 13-entry buffer at
  * EEP 0xCEBC. */
-#define CLAIM_MAX_ITEMS  3
+#define CLAIM_MAX_ITEMS  13
 typedef struct {
     uint16_t item_id;     /* gen-4 item id; 0 = slot was empty */
     uint8_t  bag;         /* hgss_bag_kind_t value */
