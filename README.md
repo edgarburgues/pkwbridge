@@ -12,6 +12,8 @@ PokéWalker emulator, so you can do the whole loop on a single 3DS.
 > Beta: it edits your save and the walker's memory directly. It keeps automatic backups,
 > but please keep your own too.
 
+<p align="center"><img src="img/screenshot.png" width="320" alt="PkwBridge running on a Nintendo 3DS"></p>
+
 ## What it does
 
 - **Send** a Pokémon (and a walking route) from your save to the walker.
